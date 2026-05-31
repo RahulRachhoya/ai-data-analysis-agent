@@ -17,7 +17,7 @@ services:
       - key: E2B_API_KEY
         sync: false  # Set manually in Render dashboard
       - key: PORT
-        value: 8000
+        value: "8000"
 
   # Frontend Next.js service
   - type: web
@@ -28,7 +28,6 @@ services:
     plan: free
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          name: data-analysis-backend
-          type: web
-          property: host
+        value: https://data-analysis-backend.onrender.com
+      - key: PORT
+        value: "3000"
