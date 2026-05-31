@@ -52,13 +52,15 @@ When writing code:
 def _get_schema_text(state: AgentState) -> str:
     """Extract schema text from dataset info."""
     info = state.get("dataset_info", {})
+    if not info:
+        return json.dumps({"error": "No dataset info available"})
     return json.dumps({
         "columns": info.get("columns", []),
         "dtypes": info.get("dtypes", {}),
         "row_count": info.get("row_count", 0),
         "preview": info.get("preview", []),
         "numeric_stats": info.get("numeric_stats", {}),
-    })
+    }, default=str)
 
 
 async def analyze_schema_node(state: AgentState) -> dict:

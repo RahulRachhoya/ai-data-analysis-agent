@@ -46,3 +46,6 @@ datasets/*.json
 
 # Logs
 *.log
+
+# TypeScript
+*.tsbuildinfo

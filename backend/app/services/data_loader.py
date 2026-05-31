@@ -1,7 +1,7 @@
 import json
 import uuid
 import os
-from io import StringIO
+from io import BytesIO, StringIO
 
 import pandas as pd
 import httpx
@@ -66,7 +66,7 @@ def load_from_file(content: bytes, filename: str) -> dict:
         data = json.loads(content)
         df = pd.DataFrame(data) if isinstance(data, list) else pd.DataFrame([data])
     elif ext == ".csv":
-        df = pd.read_csv(pd.io.common.BytesIO(content))
+        df = pd.read_csv(BytesIO(content))
     else:
         raise ValueError(f"Unsupported file format: {ext}. Please upload CSV or JSON.")
 
@@ -137,11 +137,34 @@ def get_dataset_info(dataset_id: str) -> dict | None:
             else:
                 df = pd.read_csv(file_path)
 
+            dtypes = {col: str(df[col].dtype) for col in df.columns}
+            columns = list(df.columns)
+            row_count = len(df)
+
+            # Build preview
+            preview_rows = min(5, row_count)
+            preview = df.head(preview_rows).to_dict(orient="records")
+            for row in preview:
+                for k, v in row.items():
+                    if isinstance(v, (pd.Timestamp, pd.Period)):
+                        row[k] = str(v)
+
+            # Build numeric stats
+            numeric_stats = {}
+            for col in df.select_dtypes(include=["number"]).columns:
+                numeric_stats[col] = {
+                    "min": float(df[col].min()) if pd.notna(df[col].min()) else None,
+                    "max": float(df[col].max()) if pd.notna(df[col].max()) else None,
+                    "mean": float(df[col].mean()) if pd.notna(df[col].mean()) else None,
+                    "median": float(df[col].median()) if pd.notna(df[col].median()) else None,
+                }
+
             return {
                 "file_path": file_path,
-                "df": df,
-                "columns": list(df.columns),
-                "dtypes": {col: str(df[col].dtype) for col in df.columns},
-                "row_count": len(df),
+                "columns": columns,
+                "dtypes": dtypes,
+                "row_count": row_count,
+                "preview": preview,
+                "numeric_stats": numeric_stats,
             }
     return None
