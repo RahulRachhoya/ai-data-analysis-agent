@@ -11,10 +11,11 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ENV NEXT_TELEMETRY_DISABLED=1
 
 # Create public directory if it doesn't exist
 RUN mkdir -p public
+
+ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build
 
@@ -33,6 +34,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 # Copy standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy package.json for reference
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 
 USER nextjs
 
