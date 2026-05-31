@@ -1,0 +1,34 @@
+services:
+  # Backend FastAPI service
+  - type: web
+    name: data-analysis-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: LLM_PROVIDER
+        value: openai
+      - key: OPENAI_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: OPENAI_MODEL
+        value: gpt-4o
+      - key: E2B_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: PORT
+        value: 8000
+
+  # Frontend Next.js service
+  - type: web
+    name: data-analysis-frontend
+    env: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: free
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: data-analysis-backend
+          type: web
+          property: host
