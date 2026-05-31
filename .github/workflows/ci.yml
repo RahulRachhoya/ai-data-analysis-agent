@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, master, develop]
   pull_request:
-    branches: [main]
+    branches: [main, master]
 
 jobs:
   # ── Backend tests with coverage ───────────────────────────────────
@@ -68,9 +68,9 @@ jobs:
       - name: Build
         run: npm run build
 
-  # ── Docker build & push (main branch only) ───────────────────────
+  # ── Docker build & push (main/master branch only) ────────────────
   docker:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     needs: [backend, frontend]
     runs-on: ubuntu-latest
 
