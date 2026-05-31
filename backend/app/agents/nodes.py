@@ -2,22 +2,80 @@ import json
 import os
 
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain_openai import ChatOpenAI
+from langchain_core.language_models.chat_models import BaseChatModel
 
-from app.config import OPENAI_API_KEY, OPENAI_MODEL, MAX_RETRIES
+from app.config import (
+    LLM_PROVIDER,
+    OPENAI_API_KEY, OPENAI_MODEL,
+    ANTHROPIC_API_KEY, ANTHROPIC_MODEL,
+    GOOGLE_API_KEY, GOOGLE_MODEL,
+    GROQ_API_KEY, GROQ_MODEL,
+    AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, BEDROCK_MODEL,
+    NVIDIA_API_KEY, NVIDIA_MODEL,
+    MAX_RETRIES,
+)
 from app.agents.state import AgentState
 from app.agents.tools import analyze_dataframe_schema, check_code_result
 from app.services.data_loader import get_dataset_info
 from app.services.sandbox import SandboxService
 
-# Initialize the LLM
-llm = ChatOpenAI(
-    model=OPENAI_MODEL,
-    api_key=OPENAI_API_KEY,
-    temperature=0.2,
-)
 
-# Bind tools
+def _create_llm() -> BaseChatModel:
+    """Initialize the LLM based on the configured provider."""
+    provider = LLM_PROVIDER
+
+    if provider == "openai":
+        from langchain_openai import ChatOpenAI
+        return ChatOpenAI(
+            model=OPENAI_MODEL,
+            api_key=OPENAI_API_KEY,
+            temperature=0.2,
+        )
+    elif provider == "anthropic":
+        from langchain_anthropic import ChatAnthropic
+        return ChatAnthropic(
+            model=ANTHROPIC_MODEL,
+            api_key=ANTHROPIC_API_KEY,
+            temperature=0.2,
+        )
+    elif provider == "google":
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        return ChatGoogleGenerativeAI(
+            model=GOOGLE_MODEL,
+            api_key=GOOGLE_API_KEY,
+            temperature=0.2,
+        )
+    elif provider == "groq":
+        from langchain_groq import ChatGroq
+        return ChatGroq(
+            model=GROQ_MODEL,
+            api_key=GROQ_API_KEY,
+            temperature=0.2,
+        )
+    elif provider == "bedrock":
+        from langchain_aws import ChatBedrock
+        return ChatBedrock(
+            model_id=BEDROCK_MODEL,
+            region_name=AWS_REGION,
+            credentials_profile_name=None,
+            temperature=0.2,
+        )
+    elif provider == "nvidia":
+        from langchain_nvidia_ai_endpoints import ChatNVIDIA
+        return ChatNVIDIA(
+            model=NVIDIA_MODEL,
+            api_key=NVIDIA_API_KEY,
+            temperature=0.2,
+        )
+    else:
+        raise ValueError(
+            f"Unsupported LLM_PROVIDER '{provider}'. "
+            f"Choose from: openai, anthropic, google, groq"
+        )
+
+
+# Initialize the LLM based on provider config
+llm = _create_llm()
 llm_with_tools = llm.bind_tools([analyze_dataframe_schema, check_code_result])
 
 
@@ -158,18 +216,22 @@ async def execute_code_node(state: AgentState) -> dict:
     if not code:
         return {"execution_result": {"error": {"value": "No code to execute"}}}
 
-    # Prepend data loading code
-    ext = os.path.splitext(file_path)[1].lower()
-    if ext == ".json":
-        loader = "import pandas as pd\ndf = pd.read_json(r'{path}')\n"
-    else:
-        loader = "import pandas as pd\ndf = pd.read_csv(r'{path}')\n"
-
-    full_code = loader.format(path=file_path) + code
-
     try:
         async with SandboxService() as sandbox:
             await sandbox.start()
+
+            # Upload dataset file to the sandbox so it can be read by the code
+            sandbox_filename = os.path.basename(file_path)
+            await sandbox.upload_file(file_path, sandbox_filename)
+
+            # Prepend data loading code using the sandbox path
+            ext = os.path.splitext(file_path)[1].lower()
+            if ext == ".json":
+                loader = "import pandas as pd\ndf = pd.read_json('{path}')\n"
+            else:
+                loader = "import pandas as pd\ndf = pd.read_csv('{path}')\n"
+
+            full_code = loader.format(path=sandbox_filename) + code
             result = await sandbox.run_code(full_code)
     except Exception as e:
         result = {"error": {"name": "SandboxError", "value": str(e), "traceback": ""}}

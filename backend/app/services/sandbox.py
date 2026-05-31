@@ -1,9 +1,6 @@
 import base64
-import io
-import os
+import asyncio
 from typing import Any
-
-from app.config import E2B_API_KEY
 
 
 class SandboxService:
@@ -11,6 +8,10 @@ class SandboxService:
 
     def __init__(self):
         self._sandbox = None
+        self._stdout_lines: list[str] = []
+        self._stderr_lines: list[str] = []
+        self._plots: list[dict] = []
+        self._plotly_figures: list[dict] = []
 
     async def __aenter__(self):
         return self
@@ -18,14 +19,45 @@ class SandboxService:
     async def __aexit__(self, *args):
         await self.close()
 
-    async def start(self):
-        """Create a new E2B sandbox session."""
-        from e2b_code_interpreter import Sandbox
+    def _on_stdout(self, msg):
+        """Callback for stdout from sandbox code execution."""
+        # msg is an OutputMessage with .line attribute
+        self._stdout_lines.append(msg.line)
 
-        self._sandbox = Sandbox(api_key=E2B_API_KEY)
+    def _on_stderr(self, msg):
+        """Callback for stderr from sandbox code execution."""
+        self._stderr_lines.append(msg.line)
+
+    def _on_result(self, result):
+        """Callback for results (plots, charts) from sandbox code execution."""
+        # Check for matplotlib/seaborn PNG plots
+        if hasattr(result, "png") and result.png:
+            # result.png could be raw bytes or already a base64 string
+            if isinstance(result.png, bytes):
+                img_b64 = base64.b64encode(result.png).decode("utf-8")
+            else:
+                img_b64 = result.png
+            self._plots.append({
+                "type": "matplotlib",
+                "image": f"data:image/png;base64,{img_b64}",
+            })
+
+        # Check for Plotly figures (saved as inline HTML/data)
+        if hasattr(result, "data") and result.data:
+            self._plotly_figures.append(result.data)
+
+    async def start(self):
+        """Create a new E2B sandbox session with pre-installed packages."""
+        from e2b_code_interpreter import Sandbox
+        from app.config import E2B_API_KEY
+
+        self._sandbox = await asyncio.to_thread(
+            Sandbox, api_key=E2B_API_KEY
+        )
         # Pre-install common data science packages
-        self._sandbox.commands.run(
-            "pip install pandas numpy matplotlib seaborn plotly scipy scikit-learn -q"
+        await asyncio.to_thread(
+            self._sandbox.commands.run,
+            "pip install pandas numpy matplotlib seaborn plotly scipy scikit-learn -q",
         )
         return self
 
@@ -34,22 +66,36 @@ class SandboxService:
         if not self._sandbox:
             raise RuntimeError("Sandbox not started")
         with open(local_path, "rb") as f:
-            self._sandbox.files.write(sandbox_path, f.read())
+            await asyncio.to_thread(
+                self._sandbox.files.write, sandbox_path, f.read()
+            )
 
     async def run_code(self, code: str) -> dict[str, Any]:
         """Run Python code in the sandbox and return results."""
         if not self._sandbox:
             raise RuntimeError("Sandbox not started")
 
-        execution = self._sandbox.run_code(code)
+        # Reset callbacks state
+        self._stdout_lines = []
+        self._stderr_lines = []
+        self._plots = []
+        self._plotly_figures = []
+
+        execution = await asyncio.to_thread(
+            self._sandbox.run_code,
+            code,
+            on_stdout=self._on_stdout,
+            on_stderr=self._on_stderr,
+            on_result=self._on_result,
+        )
 
         result = {
-            "text": execution.text,
-            "stdout": execution.logs.stdout if execution.logs else [],
-            "stderr": execution.logs.stderr if execution.logs else [],
+            "text": execution.text or "",
+            "stdout": self._stdout_lines,
+            "stderr": self._stderr_lines,
             "error": None,
-            "plots": [],
-            "plotly_figures": [],
+            "plots": self._plots,
+            "plotly_figures": self._plotly_figures,
         }
 
         if execution.error:
@@ -58,34 +104,14 @@ class SandboxService:
                 "value": execution.error.value,
                 "traceback": execution.error.traceback,
             }
-            return result
-
-        # Extract matplotlib/seaborn plots from results
-        for item in (execution.results or []):
-            if hasattr(item, "png") and item.png:
-                img_b64 = base64.b64encode(item.png).decode("utf-8")
-                result["plots"].append({
-                    "type": "matplotlib",
-                    "image": f"data:image/png;base64,{img_b64}",
-                })
-
-            # Check for Plotly figures (saved as HTML or JSON)
-            if hasattr(item, "data") and item.data:
-                result["plotly_figures"].append(item.data)
 
         return result
-
-    async def read_file(self, path: str) -> bytes:
-        """Read a file from the sandbox."""
-        if not self._sandbox:
-            raise RuntimeError("Sandbox not started")
-        return self._sandbox.files.read(path)
 
     async def close(self):
         """Close the sandbox session."""
         if self._sandbox:
             try:
-                self._sandbox.close()
+                await asyncio.to_thread(self._sandbox.kill)
             except Exception:
                 pass
             self._sandbox = None

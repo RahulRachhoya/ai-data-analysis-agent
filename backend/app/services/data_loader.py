@@ -1,12 +1,67 @@
 import json
+import math
 import uuid
 import os
 from io import BytesIO, StringIO
 
 import pandas as pd
+import numpy as np
 import httpx
 from typing import Any
 from app.config import DATASETS_DIR
+
+
+def _make_json_safe(val: Any) -> Any:
+    """Recursively convert values to JSON-safe equivalents."""
+    if val is None:
+        return None
+    if isinstance(val, (pd.Timestamp, pd.Period, pd.Timedelta)):
+        return str(val)
+    if isinstance(val, np.integer):
+        return int(val)
+    if isinstance(val, (np.floating, float)):
+        if math.isnan(val) or math.isinf(val):
+            return None
+        return float(val)
+    if isinstance(val, np.bool_):
+        return bool(val)
+    if isinstance(val, dict):
+        return {k: _make_json_safe(v) for k, v in val.items()}
+    if isinstance(val, list):
+        return [_make_json_safe(v) for v in val]
+    if isinstance(val, tuple):
+        return [_make_json_safe(v) for v in val]
+    if isinstance(val, bytes):
+        return val.decode("utf-8", errors="replace")
+    # pandas NA / NaT
+    try:
+        if pd.isna(val):
+            return None
+    except (TypeError, ValueError):
+        pass
+    return val
+
+
+# Default NA values from pandas, EXCLUDING "None" (which is a valid string value)
+_NA_VALUES = [
+    "",
+    "#N/A",
+    "#N/A N/A",
+    "#NA",
+    "-1.#IND",
+    "-1.#QNAN",
+    "-NaN",
+    "-nan",
+    "1.#IND",
+    "1.#QNAN",
+    "N/A",
+    "NA",
+    "NULL",
+    "NaN",
+    "n/a",
+    "nan",
+    "null",
+]
 
 
 def _save_dataset(df: pd.DataFrame, filename: str) -> str:
@@ -30,11 +85,10 @@ def _build_response(dataset_id: str, filename: str, df: pd.DataFrame) -> dict:
     preview_rows = min(5, len(df))
     preview = df.head(preview_rows).to_dict(orient="records")
 
-    # Convert non-serializable types
+    # Convert non-serializable types (NaN, NaT, numpy types, etc.)
     for row in preview:
         for k, v in row.items():
-            if isinstance(v, (pd.Timestamp, pd.Period)):
-                row[k] = str(v)
+            row[k] = _make_json_safe(v)
 
     # Stats for numeric columns
     numeric_stats = {}
@@ -66,7 +120,7 @@ def load_from_file(content: bytes, filename: str) -> dict:
         data = json.loads(content)
         df = pd.DataFrame(data) if isinstance(data, list) else pd.DataFrame([data])
     elif ext == ".csv":
-        df = pd.read_csv(BytesIO(content))
+        df = pd.read_csv(BytesIO(content), keep_default_na=False, na_values=_NA_VALUES)
     else:
         raise ValueError(f"Unsupported file format: {ext}. Please upload CSV or JSON.")
 
@@ -87,7 +141,7 @@ def load_from_url(url: str) -> dict:
         df = pd.DataFrame(data) if isinstance(data, list) else pd.DataFrame([data])
         filename = filename if filename.endswith(".json") else "remote_data.json"
     else:
-        df = pd.read_csv(StringIO(response.text))
+        df = pd.read_csv(StringIO(response.text), keep_default_na=False, na_values=_NA_VALUES)
         filename = filename if filename.endswith(".csv") else "remote_data.csv"
 
     dataset_id = _save_dataset(df, filename)
@@ -135,7 +189,7 @@ def get_dataset_info(dataset_id: str) -> dict | None:
             if ext == ".json":
                 df = pd.read_json(file_path)
             else:
-                df = pd.read_csv(file_path)
+                df = pd.read_csv(file_path, keep_default_na=False, na_values=_NA_VALUES)
 
             dtypes = {col: str(df[col].dtype) for col in df.columns}
             columns = list(df.columns)
@@ -146,8 +200,7 @@ def get_dataset_info(dataset_id: str) -> dict | None:
             preview = df.head(preview_rows).to_dict(orient="records")
             for row in preview:
                 for k, v in row.items():
-                    if isinstance(v, (pd.Timestamp, pd.Period)):
-                        row[k] = str(v)
+                    row[k] = _make_json_safe(v)
 
             # Build numeric stats
             numeric_stats = {}

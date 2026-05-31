@@ -9,9 +9,9 @@ from app.routes.agent import router as agent_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan - startup and shutdown."""
-    print("🚀 Agentic Data Analysis Sandbox starting up...")
+    print("[Agentic Data Analysis Sandbox] Starting up...")
     yield
-    print("👋 Shutting down...")
+    print("[Agentic Data Analysis Sandbox] Shutting down...")
 
 
 app = FastAPI(

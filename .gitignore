@@ -49,3 +49,6 @@ datasets/*.json
 
 # TypeScript
 *.tsbuildinfo
+  
+# Confidential documents  
+documents/ 
