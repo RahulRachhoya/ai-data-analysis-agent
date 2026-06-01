@@ -15,6 +15,9 @@ COPY . .
 # Create public directory if it doesn't exist
 RUN mkdir -p public
 
+# Accept build-time arguments for Next.js public env vars
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build

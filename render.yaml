@@ -26,6 +26,9 @@ services:
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
     plan: free
+    # Pass env vars as Docker build arguments
+    dockerBuildArgs:
+      - NEXT_PUBLIC_API_URL=https://data-analysis-backend.onrender.com
     envVars:
       - key: NEXT_PUBLIC_API_URL
         value: https://data-analysis-backend.onrender.com
