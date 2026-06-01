@@ -16,7 +16,7 @@ COPY . .
 RUN mkdir -p public
 
 # Accept build-time arguments for Next.js public env vars
-ARG NEXT_PUBLIC_API_URL=https://data-analysis-backend.onrender.com
+ARG NEXT_PUBLIC_API_URL=https://data-analysis-backend-mni0.onrender.com
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 

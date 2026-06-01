@@ -28,9 +28,9 @@ services:
     plan: free
     # Pass env vars as Docker build arguments
     dockerBuildArgs:
-      - NEXT_PUBLIC_API_URL=https://data-analysis-backend.onrender.com
+      - NEXT_PUBLIC_API_URL=https://data-analysis-backend-mni0.onrender.com
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://data-analysis-backend.onrender.com
+        value: https://data-analysis-backend-mni0.onrender.com
       - key: PORT
         value: "3000"
