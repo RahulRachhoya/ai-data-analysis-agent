@@ -76,9 +76,15 @@ def _create_llm() -> BaseChatModel:
         )
 
 
-# Initialize the LLM based on provider config
-llm = _create_llm()
-llm_with_tools = llm.bind_tools([analyze_dataframe_schema, check_code_result])
+# Lazy LLM getter to support missing optional provider packages at import time
+# and avoid top-level side effects (important for testing and config edge cases).
+_llm = None
+
+def get_llm():
+    global _llm
+    if _llm is None:
+        _llm = _create_llm()
+    return _llm
 
 
 SYSTEM_PROMPT = """You are an expert data analysis AI assistant. You help users analyze datasets by writing and executing Python code.
@@ -190,7 +196,7 @@ Create a detailed step-by-step analysis plan. Include:
 
 Keep the plan focused and actionable."""
 
-    response = await llm.ainvoke([HumanMessage(content=plan_prompt)])
+    response = await get_llm().ainvoke([HumanMessage(content=plan_prompt)])
     plan = response.content
 
     return {
@@ -226,7 +232,7 @@ Requirements:
 
 Return ONLY the Python code, no explanation."""
 
-    response = await llm.ainvoke([HumanMessage(content=code_prompt)])
+    response = await get_llm().ainvoke([HumanMessage(content=code_prompt)])
     raw_code = response.content
     code = _extract_python_code(raw_code)
     code = _enforce_code_length(code)
@@ -313,7 +319,7 @@ Original question: {question}
 
 Please fix the code to resolve this error. Return ONLY the corrected Python code."""
 
-    response = await llm.ainvoke([HumanMessage(content=fix_prompt)])
+    response = await get_llm().ainvoke([HumanMessage(content=fix_prompt)])
     fixed_code = _extract_python_code(response.content)
     fixed_code = _enforce_code_length(fixed_code)
 
@@ -344,7 +350,7 @@ async def synthesize_node(state: AgentState) -> dict:
 Error: {error.get('value', '')}
 
 Please explain what went wrong and suggest how the user could modify their question or data to get better results."""
-        response = await llm.ainvoke([HumanMessage(content=summary_prompt)])
+        response = await get_llm().ainvoke([HumanMessage(content=summary_prompt)])
         return {
             "final_response": response.content,
             "plots": plots,
@@ -367,7 +373,7 @@ Please provide a clear, concise summary of the findings. Include:
 
 Be conversational and helpful."""
 
-    response = await llm.ainvoke([HumanMessage(content=synthesis_prompt)])
+    response = await get_llm().ainvoke([HumanMessage(content=synthesis_prompt)])
 
     return {
         "final_response": response.content,
