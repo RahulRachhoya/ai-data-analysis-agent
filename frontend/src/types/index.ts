@@ -26,11 +26,15 @@ export interface SSEEvent {
   data: Record<string, unknown>
 }
 
-export type StepType = 'analyzing' | 'planning' | 'coding' | 'executing' | 'fixing'
+export type StepType = 'analyzing' | 'planning' | 'coding' | 'executing' | 'fixing' | 'orchestrating' | 'profiler' | 'planner' | 'executor' | 'critic' | 'suggester' | 'presenter' | string
 
 export interface AgentStep {
   step: StepType
   message: string
+}
+
+export interface AgentStatuses {
+  [agent: string]: string
 }
 
 export interface Message {
