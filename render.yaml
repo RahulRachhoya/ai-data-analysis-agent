@@ -11,11 +11,11 @@ services:
       - key: LLM_PROVIDER
         value: groq
       - key: GROQ_API_KEY
-        sync: false  # Set manually in Render dashboard
+        sync: false  # MUST set manually in Render dashboard
       - key: GROQ_MODEL
         value: llama-3.3-70b-versatile
       - key: E2B_API_KEY
-        sync: false  # Set manually in Render dashboard
+        sync: false  # MUST set manually in Render dashboard
       - key: PORT
         value: "8000"
 
@@ -26,11 +26,14 @@ services:
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
     plan: free
-    # IMPORTANT: Set NEXT_PUBLIC_API_URL to your ACTUAL deployed backend URL
+    # DO NOT hardcode the backend URL here anymore.
+    # After deploying the backend service, copy its public URL
     # (e.g. https://data-analysis-backend-abc123.onrender.com)
-    # Do this in the Render dashboard under the frontend service Environment variables
-    # after the backend service is deployed and has a public URL.
-    # The value below is a placeholder and must be overridden.
+    # and set it as an Environment Variable on THIS frontend service:
+    #   NEXT_PUBLIC_API_URL = <paste the real backend URL>
+    #
+    # Then trigger a new deploy of the frontend.
+    # The build arg below is a placeholder only.
     dockerBuildArgs:
       - NEXT_PUBLIC_API_URL=https://data-analysis-backend.onrender.com
     envVars:

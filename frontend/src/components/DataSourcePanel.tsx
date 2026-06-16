@@ -44,9 +44,14 @@ export function DataSourcePanel({ onDatasetLoaded }: DataSourcePanelProps) {
       onDatasetLoaded(info)
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : 'Upload failed'
-      // Log the URL that was actually called - very useful for debugging NetworkError
       console.error('Fetch error for upload. Attempted URL:', attemptedUrl, 'Error:', e)
-      setError(errorMessage + (API_BASE.includes('localhost') ? ' (Check if backend is running and NEXT_PUBLIC_API_URL is set correctly for production)' : ''))
+      
+      let hint = ''
+      if (API_BASE.includes('localhost') || API_BASE.includes('data-analysis-backend.onrender.com')) {
+        hint = ' \n\nPossible cause: NEXT_PUBLIC_API_URL is not set to your real deployed backend URL. \n'
+        hint += 'Go to your Render dashboard \u2192 data-analysis-frontend service \u2192 Environment \u2192 set NEXT_PUBLIC_API_URL to the actual backend URL (e.g. https://data-analysis-backend-xxx.onrender.com) then redeploy frontend.'
+      }
+      setError(errorMessage + hint)
     } finally {
       setLoading(false)
     }
@@ -203,7 +208,7 @@ export function DataSourcePanel({ onDatasetLoaded }: DataSourcePanelProps) {
       )}
 
       {loading && <div className="text-xs text-[#737373] flex items-center gap-2 mt-4"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing securely…</div>}
-      {error && <div className="mt-3 text-xs text-red-400 bg-red-950/30 border border-red-900 p-3 rounded-xl">{error}</div>}
+      {error && <div className="mt-3 text-xs text-red-400 bg-red-950/30 border border-red-900 p-3 rounded-xl whitespace-pre-line">{error}</div>}
     </div>
   )
 }
