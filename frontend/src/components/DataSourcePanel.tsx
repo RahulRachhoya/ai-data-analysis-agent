@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Upload, Link, Globe, Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { Upload, Link, Globe, Loader2, CheckCircle, XCircle, ArrowRight } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import type { DataSourceMode, DatasetInfo } from '@/types'
 
