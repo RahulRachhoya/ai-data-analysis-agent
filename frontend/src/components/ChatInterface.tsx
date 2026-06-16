@@ -24,7 +24,6 @@ export function ChatInterface({ datasetId, onError }: ChatInterfaceProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const { connect, disconnect, isStreaming } = useSSE()
 
-  // Use refs to avoid stale closure issues in SSE callbacks
   const pendingCodeRef = useRef<string | null>(null)
   const pendingPlotsRef = useRef<PlotData[]>([])
 
@@ -57,30 +56,17 @@ export function ChatInterface({ datasetId, onError }: ChatInterfaceProps) {
       `${API_BASE}/api/agent/query`,
       { question: questionText, dataset_id: datasetId },
       {
-        onThinking: (step, message) => {
-          setCurrentStep({ step, message })
-        },
-        onCode: (code) => {
-          pendingCodeRef.current = code
-          setCurrentStep(prev => prev) // Force re-render to show thinking
-        },
-        onPlot: (plot) => {
-          pendingPlotsRef.current = [...pendingPlotsRef.current, plot]
-          setCurrentStep(prev => prev)
-        },
-        onStdout: () => {
-          // stdout is captured but not displayed as a separate message
-        },
+        onThinking: (step, message) => setCurrentStep({ step, message }),
+        onCode: (code) => { pendingCodeRef.current = code },
+        onPlot: (plot) => { pendingPlotsRef.current = [...pendingPlotsRef.current, plot] },
         onMessage: (content) => {
           setCurrentStep(null)
-          const code = pendingCodeRef.current
-          const plots = pendingPlotsRef.current
           const assistantMsg: Message = {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
             content,
-            code: code || undefined,
-            plots: plots.length > 0 ? plots : undefined,
+            code: pendingCodeRef.current || undefined,
+            plots: pendingPlotsRef.current.length > 0 ? pendingPlotsRef.current : undefined,
             timestamp: new Date(),
           }
           addMessage(assistantMsg)
@@ -91,9 +77,7 @@ export function ChatInterface({ datasetId, onError }: ChatInterfaceProps) {
           setCurrentStep(null)
           onError(message)
         },
-        onDone: () => {
-          setCurrentStep(null)
-        },
+        onDone: () => setCurrentStep(null),
       }
     )
   }
@@ -106,91 +90,67 @@ export function ChatInterface({ datasetId, onError }: ChatInterfaceProps) {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+    <div className="flex flex-col h-full bg-[#0a0a0a]">
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
         {messages.length === 0 && !isStreaming && (
-          <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 space-y-2">
-            <Bot className="w-12 h-12" />
-            <p className="text-sm font-medium">Ask a question about your data</p>
-            <p className="text-xs max-w-xs">
-              The agent will analyze your dataset, write code, generate visualizations, and explain the results.
-            </p>
+          <div className="h-full flex flex-col items-center justify-center text-center text-[#525252]">
+            <Bot className="w-9 h-9 mb-3 opacity-40" />
+            <div className="text-sm">Ask a precise question about your data.</div>
+            <div className="text-[11px] mt-1 max-w-[260px]">The agent will plan, write secure Python, execute in isolation, and return rich visualizations + insights.</div>
           </div>
         )}
 
         {messages.map(msg => (
-          <div
-            key={msg.id}
-            className={`flex items-start gap-3 px-4 py-3 rounded-xl animate-slide-up ${
-              msg.role === 'user'
-                ? 'bg-primary-50 border border-primary-100 ml-12'
-                : 'glass-card mr-12'
-            }`}
-          >
-            <div className={`mt-0.5 shrink-0 ${
-              msg.role === 'user' ? 'text-primary-600' : 'text-gray-500'
-            }`}>
-              {msg.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm leading-relaxed">
+          <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+            {msg.role === 'assistant' && (
+              <div className="w-7 h-7 rounded bg-white/5 flex items-center justify-center shrink-0 mt-1">
+                <Bot className="w-4 h-4 text-[#a3a3a3]" />
+              </div>
+            )}
+            <div className={`max-w-[78%] ${msg.role === 'user' ? 'text-right' : ''}`}>
+              <div className={`message-bubble ${msg.role === 'user' ? 'bg-white text-black' : 'bg-[#171717] border border-[#262626]'}`}>
                 <ReactMarkdown
                   components={{
                     code({ className, children, ...props }) {
                       const isInline = !className
-                      return isInline ? (
-                        <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-primary-700" {...props}>
-                          {children}
-                        </code>
-                      ) : (
+                      return isInline ? <code className="font-mono text-xs bg-black/40 px-1 py-px rounded" {...props}>{children}</code> :
                         <CodeBlock code={String(children).replace(/\n$/, '')} />
-                      )
                     },
                   }}
                 >
                   {msg.content}
                 </ReactMarkdown>
               </div>
-              {msg.code && <CodeBlock code={msg.code} />}
+
+              {msg.code && <div className="mt-2"><CodeBlock code={msg.code} /></div>}
               {msg.plots && msg.plots.length > 0 && <PlotViewer plots={msg.plots} />}
             </div>
+            {msg.role === 'user' && <div className="w-7 h-7 rounded bg-white/5 flex items-center justify-center shrink-0 mt-1"><User className="w-4 h-4 text-[#a3a3a3]" /></div>}
           </div>
         ))}
 
-        {/* Streaming state indicators */}
-        {isStreaming && currentStep && (
-          <AgentThinking step={currentStep.step} message={currentStep.message} />
-        )}
-
+        {isStreaming && currentStep && <AgentThinking step={currentStep.step} message={currentStep.message} />}
         <div ref={chatEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="border-t border-gray-200 bg-white p-4">
-        <div className="flex gap-3 items-end">
-          <div className="flex-1 relative">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={datasetId ? "Ask a question about your data..." : "Import a dataset first..."}
-              disabled={!datasetId || isStreaming}
-              className="input-field resize-none pr-12 py-3 min-h-[44px] max-h-[120px]"
-              rows={1}
-            />
-          </div>
+      <div className="border-t border-[#1f1f1f] p-4 bg-[#0a0a0a]">
+        <div className="flex gap-3 items-end max-w-3xl mx-auto">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={datasetId ? "Ask a focused question..." : "Load a dataset to begin"}
+            disabled={!datasetId || isStreaming}
+            className="input-professional resize-none flex-1 min-h-[48px] max-h-[140px] py-3.5"
+            rows={1}
+          />
           <button
             onClick={handleSubmit}
             disabled={!input.trim() || !datasetId || isStreaming}
-            className="btn-primary h-[44px] w-[44px] p-0 flex items-center justify-center shrink-0"
+            className="btn-primary h-[48px] w-[48px] p-0 flex items-center justify-center rounded-2xl"
           >
-            {isStreaming ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
+            {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
         </div>
       </div>

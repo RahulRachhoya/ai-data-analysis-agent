@@ -1,109 +1,76 @@
-# 🤖 Agentic Data Analysis Sandbox
+# 🤖 Aether — Professional Agentic Data Analysis
 
-An AI-powered data analysis platform that uses **LangGraph agents** to autonomously analyze datasets, write Python code, execute it in a **secure E2B sandbox**, and return insights with rich visualizations.
+**Enterprise-grade autonomous data analysis platform.**
 
-Built with FastAPI + LangGraph (Python) and Next.js (TypeScript).
+Upload datasets. Ask natural language questions. Receive precise insights and rich visualizations — executed securely by LangGraph agents inside isolated E2B sandboxes.
+
+Built with **FastAPI + LangGraph** (Python backend) and **Next.js** (professional dark UI).
 
 ---
 
-## ✨ Key Features
+## ✨ Professional Features
 
-| Feature | Description |
-|:--------|:------------|
-| **🧠 Multi-Step Agent** | LangGraph orchestrates schema analysis → planning → code generation → execution → error handling |
-| **🔒 Secure Sandbox** | All code executes in E2B cloud sandboxes — no `exec()` vulnerabilities |
-| **📊 Rich Visualizations** | Both matplotlib/seaborn (static) and Plotly (interactive) charts |
-| **📥 Flexible Data Import** | Upload CSV/JSON, import from URLs, or fetch from APIs |
-| **🔄 Self-Healing** | Agent reads errors and retries with fixes (up to 3 attempts) |
-| **⚡ Real-Time Streaming** | SSE-powered streaming shows agent thinking, code, and plots as they're generated |
-| **🎨 Beautiful UI** | Dark-themed code blocks, smooth animations, responsive design |
+- **Autonomous Agent Workflow** — Schema analysis → Planning → Code generation → Secure execution → Self-correction (up to 3 retries) → Synthesis
+- **Ultra-Secure Execution** — 100% of Python runs in ephemeral E2B cloud sandboxes. No local `exec()` or eval.
+- **Stunning Dark Professional Interface** — Pure black & crisp white typography. Refined typography, generous spacing, elegant components.
+- **Rich Visualizations** — Matplotlib/seaborn static images + fully interactive Plotly charts rendered professionally.
+- **Flexible Data Sources** — Direct file upload (CSV/JSON), public URL, or authenticated REST API import.
+- **Real-time Streaming** — Beautiful SSE-powered live updates of agent thinking, generated code, and results.
 
-## 📚 Documentation
+## 🎨 New Professional Dark UI
 
-All detailed guides, deployment instructions, and historical fix notes have been moved to the `docs/` directory for better organization:
+The entire frontend has been completely redesigned for a premium, enterprise feel:
 
-- [Deployment Guides](docs/)
-- [Past Fixes & Notes](docs/)
-- [Test System Design](docs/test-system-design.md)
+- Deep black backgrounds (#0a0a0a)
+- High-contrast white and near-white text
+- Clean professional cards, inputs, and code blocks
+- Elegant centered landing experience when no data is loaded
+- Focused, distraction-free analysis workspace once a dataset is imported
 
-See `docs/README.md` for the full index.
+## 📚 Documentation & Previous Improvements
+
+See the `docs/` directory for:
+- Deployment guides
+- Full test system design
+- Historical notes
 
 ## 🛠️ Tech Stack
 
-### Backend
-| Technology | Purpose |
-|:-----------|:--------|
-| **FastAPI** | Web framework with async support & SSE streaming |
-| **LangGraph** | Stateful agent orchestration with cycles/error handling |
-| **OpenAI / Groq / etc** | LLM for planning, code generation, and synthesis (configurable) |
-| **E2B Sandbox** | Secure, ephemeral cloud Python execution |
-| **Pandas/NumPy** | Data manipulation |
+**Backend**
+- FastAPI + LangGraph (multi-provider LLM support)
+- E2B Code Interpreter
+- Pandas / NumPy
 
-### Frontend
-| Technology | Purpose |
-|:-----------|:--------|
-| **Next.js 14** | React framework with App Router |
-| **Tailwind CSS** | Utility-first styling |
-| **react-plotly.js** | Interactive Plotly charts |
+**Frontend**
+- Next.js 14 + TypeScript + Tailwind
+- react-markdown, react-plotly.js, lucide-react
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- Python 3.12+
-- Node.js 20+
-- An [OpenAI API key](https://platform.openai.com/api-keys) or Groq etc.
-- An [E2B API key](https://e2b.dev/dashboard) (free tier available)
-
-### 1. Clone & Setup Environment
-
 ```bash
+# Backend
 cd backend
-cp .env.example .env
-# Edit .env with your keys + LLM_PROVIDER (groq or openai etc.)
+cp .env.example .env   # add OPENAI_API_KEY (or GROQ) + E2B_API_KEY
 pip install -r requirements.txt
-
-cd ../frontend
-npm install
-```
-
-### 2. Run Locally
-
-```bash
-# Terminal 1
-cd backend
 uvicorn app.main:app --reload --port 8000
 
-# Terminal 2
-cd frontend
+# Frontend (new terminal)
+cd ../frontend
+npm install
 npm run dev
 ```
 
-The app will be available at **http://localhost:3000**.
-
-See `docs/` for deployment guides (Railway, Render, etc).
+Open **http://localhost:3000** — you will see a refined professional dark interface.
 
 ## 📁 Project Structure
 
 ```
-backend/
-├── app/
-│   ├── agents/          # LangGraph nodes, state, graph, tools
-│   ├── services/        # data_loader, sandbox (E2B), viz
-│   ├── routes/
-│   └── ...
-├── tests/             # pytest (asyncio) - strong coverage on services + new agent edges
-├── pytest.ini
-└── ...
-
- docs/                # All guides and design docs
+backend/               # FastAPI + agent logic + tests
+frontend/              # Next.js professional dark UI
+  src/app/             # layout, page (landing + workspace)
+  src/components/      # refined dark DataSource, Chat, Plots, etc.
+docs/                  # guides + test design
 ```
-
-## 🧠 Skills Demonstrated
-
-- Multi-Agent Orchestration with LangGraph
-- Secure code execution boundary (E2B)
-- Self-correction loop (max 3)
-- Full stack + real-time SSE
 
 ## 📄 License
 

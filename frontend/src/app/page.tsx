@@ -1,91 +1,155 @@
 'use client'
 
 import { useState } from 'react'
-import { Bot, Database, AlertCircle, X } from 'lucide-react'
+import { Bot, Database, AlertCircle, X, ArrowRight } from 'lucide-react'
 import { DataSourcePanel } from '@/components/DataSourcePanel'
 import { ChatInterface } from '@/components/ChatInterface'
 import type { DatasetInfo } from '@/types'
 
-export default function Home() {
+export default function AetherProfessional() {
   const [dataset, setDataset] = useState<DatasetInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-3 shrink-0">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <div className="min-h-screen bg-[#0a0a0a] text-[#fafafa] flex flex-col">
+      {/* Professional Top Bar */}
+      <header className="border-b border-[#1f1f1f] bg-[#0a0a0a]/95 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
-              <Bot className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
+              <Bot className="w-4.5 h-4.5 text-black" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Agentic Data Analysis</h1>
-              <p className="text-xs text-gray-500">Powered by LangGraph + E2B Sandbox</p>
+              <div className="font-semibold tracking-[-0.025em] text-lg">Aether</div>
+              <div className="text-[10px] text-[#525252] -mt-1">DATA INTELLIGENCE</div>
             </div>
           </div>
-          {dataset && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
-              <Database className="w-3.5 h-3.5 text-green-600" />
-              <span className="text-xs font-medium text-green-700 truncate max-w-[200px]">
-                {dataset.filename}
-              </span>
+
+          <div className="flex items-center gap-3 text-sm">
+            <div className="px-3 py-1 rounded-full bg-[#111] border border-[#222] text-[#a3a3a3] text-xs font-medium tracking-widest">
+              SECURE AGENTIC ANALYSIS
             </div>
-          )}
+            {dataset && (
+              <div className="flex items-center gap-2 px-4 py-1.5 bg-[#111] border border-[#222] rounded-2xl text-xs">
+                <Database className="w-3.5 h-3.5" />
+                <span className="font-medium truncate max-w-[220px]">{dataset.filename}</span>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="flex-1 flex gap-4 p-4 max-w-7xl mx-auto w-full min-h-0">
-        {/* Sidebar - Data Source */}
-        <aside className="w-80 shrink-0 flex flex-col gap-4 overflow-y-auto">
-          <DataSourcePanel onDatasetLoaded={setDataset} />
-          
-          {/* Tips */}
-          <div className="glass-card p-4">
-            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider mb-2">Tips</h3>
-            <ul className="space-y-2 text-xs text-gray-500">
-              <li className="flex items-start gap-2">
-                <span className="text-primary-500 mt-0.5">•</span>
-                Upload CSV or JSON files
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary-500 mt-0.5">•</span>
-                Ask specific questions about your data
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary-500 mt-0.5">•</span>
-                The agent will write & execute Python code
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary-500 mt-0.5">•</span>
-                Results include charts and insights
-              </li>
-            </ul>
-          </div>
-        </aside>
-
-        {/* Chat Area */}
-        <main className="flex-1 glass-card flex flex-col min-h-0 overflow-hidden">
-          <ChatInterface datasetId={dataset?.dataset_id || null} onError={setError} />
-        </main>
-      </div>
-
-      {/* Error Toast */}
-      {error && (
-        <div className="fixed bottom-6 right-6 animate-slide-up z-50">
-          <div className="flex items-start gap-3 bg-red-900/95 backdrop-blur-sm text-white px-5 py-4 rounded-xl shadow-xl border border-red-700/50 max-w-sm">
-            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-red-400" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">Error</p>
-              <p className="text-xs text-red-200 mt-1">{error}</p>
+      {!dataset ? (
+        /* Professional Landing / Onboarding */ 
+        <div className="flex-1 flex items-center justify-center px-6 pt-10 pb-20">
+          <div className="max-w-3xl text-center">
+            <div className="inline-block px-4 py-1 text-xs tracking-[3px] font-medium border border-[#333] rounded-full mb-6 text-[#737373]">
+              PROFESSIONAL EDITION
             </div>
-            <button onClick={() => setError(null)} className="shrink-0 text-red-300 hover:text-white transition-colors">
+
+            <h1 className="text-6xl md:text-7xl font-semibold tracking-tighter leading-[.96] mb-4">
+              Precision data<br />analysis.<br />
+              <span className="text-[#a3a3a3]">Autonomous.</span>
+            </h1>
+
+            <p className="max-w-md mx-auto text-xl text-[#a3a3a3] tracking-[-0.015em] mb-10">
+              Upload your data. Ask anything. Get production-grade insights with visualizations — powered by secure agentic execution.
+            </p>
+
+            {/* Elegant Data Import */}
+            <div className="max-w-2xl mx-auto">
+              <div className="professional-card p-9">
+                <div className="mb-5 text-left">
+                  <div className="text-xs uppercase tracking-widest text-[#525252] mb-1.5">GET STARTED</div>
+                  <div className="text-2xl font-medium tracking-tight">Import your dataset</div>
+                </div>
+                <DataSourcePanel onDatasetLoaded={setDataset} />
+              </div>
+            </div>
+
+            <div className="mt-8 text-[10px] text-[#525252] tracking-widest">
+              CSV · JSON · URL · API  ·  End-to-end encrypted execution in isolated sandboxes
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Professional Workspace */ 
+        <div className="flex-1 max-w-7xl mx-auto w-full px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+            {/* Left Data Panel */}
+            <div className="lg:col-span-3">
+              <div className="sticky top-20">
+                <div className="section-header mb-2.5">DATASET</div>
+                <div className="professional-card p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <div className="font-medium tracking-tight text-lg leading-none mb-1.5">{dataset.filename}</div>
+                      <div className="text-xs text-[#737373]">
+                        {dataset.row_count.toLocaleString()} rows · {dataset.columns.length} columns
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setDataset(null)}
+                      className="text-xs px-3 py-1 rounded-lg border border-[#333] hover:bg-[#1a1a1a] text-[#a3a3a3] hover:text-white transition-colors"
+                    >
+                      Change
+                    </button>
+                  </div>
+
+                  <div className="text-[13px] text-[#a3a3a3] leading-snug">
+                    {dataset.columns.slice(0, 6).join(', ')}{dataset.columns.length > 6 && ' …'}
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <div className="section-header mb-3">NEW ANALYSIS</div>
+                  <DataSourcePanel onDatasetLoaded={setDataset} />
+                </div>
+              </div>
+            </div>
+
+            {/* Main Chat & Results */}
+            <div className="lg:col-span-9 min-h-[620px]">
+              <div className="professional-card h-full flex flex-col overflow-hidden">
+                <div className="px-8 pt-6 pb-3 border-b border-[#222]">
+                  <div className="font-medium tracking-tight">Analysis Workspace</div>
+                  <div className="text-xs text-[#525252]">Ask natural language questions. The agent writes, executes, and explains.</div>
+                </div>
+
+                <div className="flex-1 min-h-0">
+                  <ChatInterface 
+                    datasetId={dataset?.dataset_id || null} 
+                    onError={setError} 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Elegant Error Toast */}
+      {error && (
+        <div className="fixed bottom-8 right-8 max-w-sm animate-slide-up z-[100]">
+          <div className="professional-card p-5 flex items-start gap-4 border-red-900/40">
+            <AlertCircle className="w-5 h-5 mt-0.5 text-red-400 shrink-0" />
+            <div className="flex-1 text-sm">
+              <div className="font-medium mb-px">Something went wrong</div>
+              <div className="text-[#a3a3a3]">{error}</div>
+            </div>
+            <button onClick={() => setError(null)} className="text-[#525252] hover:text-white p-1 -mr-1">
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
+
+      <footer className="mt-auto border-t border-[#1f1f1f] py-4">
+        <div className="max-w-7xl mx-auto px-8 text-[10px] text-[#525252] flex justify-between">
+          <div>Powered by LangGraph · E2B Secure Sandbox</div>
+          <div>Professional • Secure • Precise</div>
+        </div>
+      </footer>
     </div>
   )
 }

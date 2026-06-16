@@ -2,8 +2,11 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Agentic Data Analysis Sandbox',
-  description: 'AI-powered data analysis with LangGraph agents. Upload data, ask questions, get insights with visualizations.',
+  title: 'Aether • Professional Agentic Data Analysis',
+  description: 'Enterprise-grade autonomous data analysis. Secure agentic Python execution in the cloud. Upload datasets, ask natural language questions, receive precise insights with beautiful visualizations.',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({
@@ -12,8 +15,10 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className="dark">
+      <body className="bg-[#0a0a0a] text-[#fafafa] antialiased">
+        {children}
+      </body>
     </html>
   )
 }

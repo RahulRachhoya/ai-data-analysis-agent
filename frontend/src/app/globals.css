@@ -4,51 +4,73 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --border: 214 32% 91%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 239 84% 67%;
-    --accent-foreground: 0 0% 100%;
+    --bg: #0a0a0a;
+    --bg-elevated: #121212;
+    --bg-card: #171717;
+    --border: #262626;
+    --text-primary: #fafafa;
+    --text-secondary: #a3a3a3;
+    --text-muted: #737373;
+    --accent: #f4f4f5;
+    --accent-foreground: #0a0a0a;
+  }
+
+  html,
+  body {
+    background-color: var(--bg);
+    color: var(--text-primary);
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    font-feature-settings: "kern" "tnum" "ss01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
 @layer components {
-  .glass-card {
-    @apply bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm;
+  .professional-card {
+    @apply bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl;
+  }
+
+  .section-header {
+    @apply text-xs font-semibold tracking-[0.125em] text-[var(--text-muted)] uppercase mb-3;
+  }
+
+  .input-professional {
+    @apply w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm
+    text-[var(--text-primary)] placeholder:text-[var(--text-muted)]
+    focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30
+    transition-all duration-200;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium text-sm
-    hover:bg-primary-700 active:bg-primary-800 transition-all duration-150
-    disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-2.5 
+    bg-white text-black rounded-xl font-medium text-sm tracking-[-0.01em]
+    hover:bg-[#f5f5f5] active:bg-[#e5e5e5] transition-all duration-150
+    disabled:opacity-50 disabled:cursor-not-allowed shadow-sm;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-gray-700 rounded-lg font-medium text-sm border border-gray-300
-    hover:bg-gray-50 active:bg-gray-100 transition-all duration-150
-    disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 
+    bg-transparent text-[var(--text-primary)] border border-[var(--border)] rounded-xl font-medium text-sm
+    hover:bg-[var(--bg-elevated)] hover:border-[var(--text-muted)] transition-all duration-150
+    disabled:opacity-50;
   }
 
-  .input-field {
-    @apply w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900
-    placeholder:text-gray-400
-    focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-    transition-all duration-150;
+  .message-bubble {
+    @apply px-5 py-4 rounded-2xl text-[15px] leading-[1.55] tracking-[-0.01em];
+  }
+
+  .code-block {
+    @apply bg-[#0a0a0a] border border-[#262626] rounded-xl overflow-hidden font-mono text-sm;
   }
 }
 
-/* Scrollbar styles */
+/* Refined scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -56,14 +78,21 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full;
+  background: #3f3f46;
+  border-radius: 20px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+  background: #52525b;
 }
 
-/* Plotly responsive */
+/* Professional Plotly dark styling */
 .js-plotly-plot .plotly .main-svg {
-  border-radius: 8px;
+  border-radius: 12px;
+}
+
+/* Elegant focus for textareas */
+textarea.input-professional {
+  field-sizing: content;
+  min-height: 48px;
 }

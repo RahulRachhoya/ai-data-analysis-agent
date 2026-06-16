@@ -3,7 +3,6 @@
 import dynamic from 'next/dynamic'
 import type { PlotData } from '@/types'
 
-// Dynamically import Plotly to avoid SSR issues
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false })
 
 interface PlotViewerProps {
@@ -14,36 +13,30 @@ export function PlotViewer({ plots }: PlotViewerProps) {
   if (!plots.length) return null
 
   return (
-    <div className="space-y-4 my-4">
+    <div className="space-y-4 mt-4">
       {plots.map((plot, i) => (
-        <div
-          key={i}
-          className="glass-card p-4 animate-slide-up overflow-hidden"
-        >
+        <div key={i} className="professional-card p-5">
           {plot.type === 'matplotlib' && plot.image && (
-            <div className="flex items-center justify-center bg-white rounded-lg p-2">
+            <div className="flex justify-center bg-[#0a0a0a] rounded-xl p-3 border border-[#1f1f1f]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={plot.image}
-                alt={`Analysis plot ${i + 1}`}
-                className="max-w-full h-auto rounded-lg shadow-sm"
-              />
+              <img src={plot.image} alt={`Plot ${i + 1}`} className="max-w-full h-auto rounded" />
             </div>
           )}
           {plot.type === 'plotly' && plot.figure && (
-            <div className="flex items-center justify-center">
+            <div>
               <Plot
                 data={plot.figure.data as Plotly.Data[]}
                 layout={{
                   ...(plot.figure.layout as Partial<Plotly.Layout>),
                   autosize: true,
-                  margin: { l: 50, r: 30, t: 40, b: 50 },
-                  paper_bgcolor: 'rgba(0,0,0,0)',
-                  plot_bgcolor: 'rgba(0,0,0,0)',
+                  paper_bgcolor: '#0a0a0a',
+                  plot_bgcolor: '#111',
+                  font: { color: '#a3a3a3', size: 11 },
+                  margin: { l: 45, r: 25, t: 35, b: 40 },
                 }}
                 config={{ responsive: true, displayModeBar: false }}
                 useResizeHandler
-                style={{ width: '100%', height: '100%' }}
+                style={{ width: '100%', height: 380 }}
               />
             </div>
           )}
