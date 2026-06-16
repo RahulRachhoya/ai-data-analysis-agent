@@ -50,6 +50,20 @@ class Settings(BaseSettings):
     max_retries: int = 3
     max_code_length: int = 8000
 
+    # ---- Multi-agent orchestration (per plan: heartbeats, waits, comms) ----
+    heartbeat_interval: float = 3.0  # seconds for transport-level heartbeats in SSE (supervisor listens to agent statuses)
+    # Roles for clarity (used in prompts/status)
+    agent_roles: dict = {
+        "supervisor": "Orchestrator coordinating specialists, listening heartbeats and managing waits",
+        "profiler": "DataProfiler analyzing schema and sending initial insights",
+        "planner": "Planner creating step-by-step plans",
+        "coder": "CodeGenerator (internal; executor compiles/runs)",
+        "executor": "Executor/SandboxAgent that \'compiles\' and runs code, returning results primary",
+        "critic": "Critic/Fixer for errors (communicates fixes)",
+        "suggester": "Suggester generating dataset-specific follow-up actions",
+        "presenter": "Presenter for final step-by-step narrative + suggestions (execution-focused)",
+    }
+
 
 # Create a singleton settings instance — loads from .env automatically
 settings = Settings()
