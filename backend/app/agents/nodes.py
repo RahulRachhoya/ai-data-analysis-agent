@@ -1,5 +1,7 @@
 import json
 import os
+import re
+from typing import Optional
 
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -12,7 +14,7 @@ from app.config import (
     GROQ_API_KEY, GROQ_MODEL,
     AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, BEDROCK_MODEL,
     NVIDIA_API_KEY, NVIDIA_MODEL,
-    MAX_RETRIES,
+    MAX_RETRIES, MAX_CODE_LENGTH,
 )
 from app.agents.state import AgentState
 from app.agents.tools import analyze_dataframe_schema, check_code_result
@@ -70,7 +72,7 @@ def _create_llm() -> BaseChatModel:
     else:
         raise ValueError(
             f"Unsupported LLM_PROVIDER '{provider}'. "
-            f"Choose from: openai, anthropic, google, groq"
+            f"Choose from: openai, anthropic, google, groq, bedrock, nvidia"
         )
 
 
@@ -119,6 +121,40 @@ def _get_schema_text(state: AgentState) -> str:
         "preview": info.get("preview", []),
         "numeric_stats": info.get("numeric_stats", {}),
     }, default=str)
+
+
+def _extract_python_code(text: str) -> str:
+    """Robustly extract Python code from LLM output that may contain markdown fences."""
+    if not text:
+        return ""
+    # Prefer ```python ... ```
+    match = re.search(r"```python\s*\n(.*?)\n```", text, re.DOTALL | re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    # Fallback to generic ```
+    match = re.search(r"```\s*\n(.*?)\n```", text, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    # Last resort: strip leading/trailing fence markers if present
+    cleaned = text.strip()
+    if cleaned.startswith("```python"):
+        cleaned = cleaned[9:]
+    if cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    return cleaned.strip()
+
+
+def _enforce_code_length(code: str) -> str:
+    """Truncate overly long generated code (defense against runaway LLM output)."""
+    if len(code) > MAX_CODE_LENGTH:
+        truncated = code[:MAX_CODE_LENGTH]
+        last_newline = truncated.rfind("\n")
+        if last_newline > MAX_CODE_LENGTH * 0.8:
+            truncated = truncated[:last_newline]
+        return truncated + "\n# [TRUNCATED by MAX_CODE_LENGTH guard]"
+    return code
 
 
 async def analyze_schema_node(state: AgentState) -> dict:
@@ -191,16 +227,9 @@ Requirements:
 Return ONLY the Python code, no explanation."""
 
     response = await llm.ainvoke([HumanMessage(content=code_prompt)])
-    code = response.content.strip()
-
-    # Clean code blocks if present
-    if code.startswith("```python"):
-        code = code[len("```python"):]
-    if code.startswith("```"):
-        code = code[len("```"):]
-    if code.endswith("```"):
-        code = code[:-3]
-    code = code.strip()
+    raw_code = response.content
+    code = _extract_python_code(raw_code)
+    code = _enforce_code_length(code)
 
     return {
         "messages": [AIMessage(content=f"```python\n{code}\n```")],
@@ -209,34 +238,56 @@ Return ONLY the Python code, no explanation."""
 
 
 async def execute_code_node(state: AgentState) -> dict:
-    """Execute the generated code in the E2B sandbox."""
+    """Execute the generated code in the E2B sandbox.
+
+    Edge cases addressed:
+    - Always uses a *canonical* safe filename inside the sandbox to avoid
+      injection / quoting issues from original user filenames.
+    - Records errors into state['errors'].
+    """
     code = state.get("generated_code", "")
     file_path = state.get("dataset_file_path", "")
 
+    errors = state.get("errors", []) or []
+
     if not code:
-        return {"execution_result": {"error": {"value": "No code to execute"}}}
+        err = {"error": {"value": "No code to execute"}}
+        errors.append("No generated code")
+        return {"execution_result": err, "errors": errors}
+
+    if len(code) > MAX_CODE_LENGTH:
+        err = {"error": {"value": f"Code exceeds MAX_CODE_LENGTH ({MAX_CODE_LENGTH})"}}
+        errors.append("Code length violation")
+        return {"execution_result": err, "errors": errors}
 
     try:
         async with SandboxService() as sandbox:
             await sandbox.start()
 
-            # Upload dataset file to the sandbox so it can be read by the code
-            sandbox_filename = os.path.basename(file_path)
-            await sandbox.upload_file(file_path, sandbox_filename)
+            # Determine extension and use *canonical safe name* inside sandbox
+            ext = os.path.splitext(file_path)[1].lower() if file_path else ".csv"
+            sandbox_filename = "uploaded_data" + (".json" if ext == ".json" else ".csv")
 
-            # Prepend data loading code using the sandbox path
-            ext = os.path.splitext(file_path)[1].lower()
-            if ext == ".json":
-                loader = "import pandas as pd\ndf = pd.read_json('{path}')\n"
+            # Upload the *local backend* dataset file (populated by data routes)
+            if file_path and os.path.exists(file_path):
+                await sandbox.upload_file(file_path, sandbox_filename)
             else:
-                loader = "import pandas as pd\ndf = pd.read_csv('{path}')\n"
+                # Edge case: file missing on backend FS
+                raise FileNotFoundError(f"Dataset file not found on backend: {file_path}")
 
-            full_code = loader.format(path=sandbox_filename) + code
+            # Safe hardcoded loader — no user-controlled filename in the executed source
+            if ext == ".json":
+                loader = "import pandas as pd\ndf = pd.read_json('uploaded_data.json')\n"
+            else:
+                loader = "import pandas as pd\ndf = pd.read_csv('uploaded_data.csv')\n"
+
+            full_code = loader + code
             result = await sandbox.run_code(full_code)
     except Exception as e:
         result = {"error": {"name": "SandboxError", "value": str(e), "traceback": ""}}
+        errors.append(f"Sandbox error: {str(e)}")
 
-    return {"execution_result": result}
+    return {"execution_result": result, "errors": errors}
 
 
 async def fix_error_node(state: AgentState) -> dict:
@@ -245,6 +296,7 @@ async def fix_error_node(state: AgentState) -> dict:
     error = state.get("execution_result", {}).get("error", {})
     error_count = state.get("error_count", 0) + 1
     question = state.get("user_question", "")
+    errors = state.get("errors", []) or []
 
     fix_prompt = f"""The following code produced an error:
 
@@ -262,20 +314,15 @@ Original question: {question}
 Please fix the code to resolve this error. Return ONLY the corrected Python code."""
 
     response = await llm.ainvoke([HumanMessage(content=fix_prompt)])
-    fixed_code = response.content.strip()
+    fixed_code = _extract_python_code(response.content)
+    fixed_code = _enforce_code_length(fixed_code)
 
-    # Clean code blocks
-    if fixed_code.startswith("```python"):
-        fixed_code = fixed_code[len("```python"):]
-    if fixed_code.startswith("```"):
-        fixed_code = fixed_code[len("```"):]
-    if fixed_code.endswith("```"):
-        fixed_code = fixed_code[:-3]
-    fixed_code = fixed_code.strip()
+    errors.append(f"Retry {error_count}: {error.get('value', 'unknown error')}")
 
     return {
         "generated_code": fixed_code,
         "error_count": error_count,
+        "errors": errors,
         "messages": [AIMessage(content=f"Fixed code (attempt {error_count}):\n```python\n{fixed_code}\n```")],
     }
 

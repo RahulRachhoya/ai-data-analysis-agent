@@ -1,1 +1,1 @@
-[the docs index content]
+[the docs index]

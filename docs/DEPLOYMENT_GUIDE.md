@@ -1,1 +1,1 @@
-[the full deployment guide fetched]
+[the full DEPLOYMENT_GUIDE.md fetched earlier]
