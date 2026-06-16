@@ -15,8 +15,10 @@ COPY . .
 # Create public directory if it doesn't exist
 RUN mkdir -p public
 
-# Accept build-time arguments for Next.js public env vars
-ARG NEXT_PUBLIC_API_URL=https://data-analysis-backend-mni0.onrender.com
+# Accept build-time arguments for Next.js public env vars.
+# This MUST be set to your production backend URL when deploying on Render.
+# See render.yaml for how to configure it.
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 

@@ -30,33 +30,35 @@ export function DataSourcePanel({ onDatasetLoaded }: DataSourcePanelProps) {
 
     setLoading(true)
     setError(null)
+    const attemptedUrl = `${API_BASE}/api/data/upload`
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await fetch(`${API_BASE}/api/data/upload`, { method: 'POST', body: formData })
-      if (!res.ok) throw new Error((await res.text()) || 'Upload failed')
+      const res = await fetch(attemptedUrl, { method: 'POST', body: formData })
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Upload failed (${res.status}): ${errorText}`)
+      }
       const info = await res.json()
       setDataset(info)
       onDatasetLoaded(info)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Upload failed')
+      const errorMessage = e instanceof Error ? e.message : 'Upload failed'
+      // Log the URL that was actually called - very useful for debugging NetworkError
+      console.error('Fetch error for upload. Attempted URL:', attemptedUrl, 'Error:', e)
+      setError(errorMessage + (API_BASE.includes('localhost') ? ' (Check if backend is running and NEXT_PUBLIC_API_URL is set correctly for production)' : ''))
     } finally {
       setLoading(false)
     }
   }, [onDatasetLoaded])
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'text/csv': ['.csv'], 'application/json': ['.json'] },
-    maxFiles: 1,
-  })
-
   const handleUrlImport = async () => {
     if (!url.trim()) return
     setLoading(true)
     setError(null)
+    const attemptedUrl = `${API_BASE}/api/data/url`
     try {
-      const res = await fetch(`${API_BASE}/api/data/url`, {
+      const res = await fetch(attemptedUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url.trim() }),
@@ -66,7 +68,9 @@ export function DataSourcePanel({ onDatasetLoaded }: DataSourcePanelProps) {
       setDataset(info)
       onDatasetLoaded(info)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'URL import failed')
+      const errorMessage = e instanceof Error ? e.message : 'URL import failed'
+      console.error('Fetch error for URL import. Attempted URL:', attemptedUrl, 'Error:', e)
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -76,6 +80,7 @@ export function DataSourcePanel({ onDatasetLoaded }: DataSourcePanelProps) {
     if (!apiUrl.trim()) return
     setLoading(true)
     setError(null)
+    const attemptedUrl = `${API_BASE}/api/data/api`
     try {
       let headers: Record<string, string> | undefined
       if (apiHeaders.trim()) {
@@ -88,7 +93,7 @@ export function DataSourcePanel({ onDatasetLoaded }: DataSourcePanelProps) {
         body = JSON.parse(apiBody)
       }
 
-      const res = await fetch(`${API_BASE}/api/data/api`, {
+      const res = await fetch(attemptedUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: apiUrl.trim(), method: apiMethod, headers, body, response_path: apiResponsePath.trim() || undefined }),
@@ -98,7 +103,9 @@ export function DataSourcePanel({ onDatasetLoaded }: DataSourcePanelProps) {
       setDataset(info)
       onDatasetLoaded(info)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'API import failed')
+      const errorMessage = e instanceof Error ? e.message : 'API import failed'
+      console.error('Fetch error for API import. Attempted URL:', attemptedUrl, 'Error:', e)
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
