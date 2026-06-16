@@ -18,7 +18,7 @@ Built with FastAPI + LangGraph (Python) and Next.js (TypeScript).
 | **⚡ Real-Time Streaming** | SSE-powered streaming shows agent thinking, code, and plots as they're generated |
 | **🎨 Beautiful UI** | Dark-themed code blocks, smooth animations, responsive design |
 
-## 📍a Documentation
+## 📚 Documentation
 
 All detailed guides, deployment instructions, and historical fix notes have been moved to the `docs/` directory for better organization:
 
@@ -59,8 +59,7 @@ See `docs/README.md` for the full index.
 ```bash
 cd backend
 cp .env.example .env
-# Edit .env with your keys + LLM_PROVIDER
-groq or openai etc.
+# Edit .env with your keys + LLM_PROVIDER (groq or openai etc.)
 pip install -r requirements.txt
 
 cd ../frontend
