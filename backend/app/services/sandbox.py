@@ -2,6 +2,15 @@ import base64
 import asyncio
 from typing import Any
 
+# Packages we pre-install in every fresh E2B sandbox.
+# NOTE: This runs on every execute_code node (including retries). This is a known
+# performance/cost edge case for the self-healing loop. Future improvement:
+# create sandbox once per agent invocation and reuse across execute/fix nodes,
+# or use E2B templates / custom SB images.
+SANDBOX_PREINSTALL = (
+    "pip install pandas numpy matplotlib seaborn plotly scipy scikit-learn pillow kaleido -q"
+)
+
 
 class SandboxService:
     """Service wrapping E2B code interpreter sandbox for secure Python execution."""
@@ -21,7 +30,6 @@ class SandboxService:
 
     def _on_stdout(self, msg):
         """Callback for stdout from sandbox code execution."""
-        # msg is an OutputMessage with .line attribute
         self._stdout_lines.append(msg.line)
 
     def _on_stderr(self, msg):
@@ -30,9 +38,7 @@ class SandboxService:
 
     def _on_result(self, result):
         """Callback for results (plots, charts) from sandbox code execution."""
-        # Check for matplotlib/seaborn PNG plots
         if hasattr(result, "png") and result.png:
-            # result.png could be raw bytes or already a base64 string
             if isinstance(result.png, bytes):
                 img_b64 = base64.b64encode(result.png).decode("utf-8")
             else:
@@ -42,7 +48,6 @@ class SandboxService:
                 "image": f"data:image/png;base64,{img_b64}",
             })
 
-        # Check for Plotly figures (saved as inline HTML/data)
         if hasattr(result, "data") and result.data:
             self._plotly_figures.append(result.data)
 
@@ -51,13 +56,17 @@ class SandboxService:
         from e2b_code_interpreter import Sandbox
         from app.config import E2B_API_KEY
 
+        if not E2B_API_KEY:
+            raise RuntimeError("E2B_API_KEY is not configured. Cannot start sandbox.")
+
         self._sandbox = await asyncio.to_thread(
             Sandbox, api_key=E2B_API_KEY
         )
-        # Pre-install common data science packages
+        # Pre-install common data science + viz packages.
+        # This is the expensive step executed for every analysis (and every retry).
         await asyncio.to_thread(
             self._sandbox.commands.run,
-            "pip install pandas numpy matplotlib seaborn plotly scipy scikit-learn -q",
+            SANDBOX_PREINSTALL,
         )
         return self
 
