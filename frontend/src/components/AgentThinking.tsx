@@ -1,6 +1,6 @@
 'use client'
 
-import { Brain, Code, Database, Rocket, Wrench } from 'lucide-react'
+import { Brain, Code, Database, Rocket, Wrench, Bot } from 'lucide-react'
 import type { StepType } from '@/types'
 
 interface AgentThinkingProps {
@@ -8,16 +8,23 @@ interface AgentThinkingProps {
   message: string
 }
 
-const stepIcons: Record<StepType, typeof Brain> = {
+const stepIcons: Record<string, typeof Brain> = {
   analyzing: Database,
   planning: Brain,
   coding: Code,
   executing: Rocket,
   fixing: Wrench,
+  orchestrating: Brain,
+  profiler: Database,
+  planner: Brain,
+  executor: Rocket,
+  critic: Wrench,
+  suggester: Brain,
+  presenter: Bot,
 }
 
 export function AgentThinking({ step, message }: AgentThinkingProps) {
-  const Icon = stepIcons[step]
+  const Icon = stepIcons[step] || Brain
 
   return (
     <div className="flex items-start gap-4 pl-2 pr-4 py-2">

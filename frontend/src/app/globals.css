@@ -62,6 +62,14 @@
     @apply px-5 py-4 rounded-2xl text-[15px] leading-[1.55] tracking-[-0.01em];
   }
 
+  /* Premium interactive elements for multi-agent (double-bezel + motivated motion already in components) */
+  .suggestion-chip {
+    transition: all 160ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .suggestion-chip:hover {
+    transform: translateY(-1px);
+  }
+
   .code-block {
     @apply bg-[#0a0a0a] border border-[#262626] rounded-xl overflow-hidden font-mono text-sm;
   }

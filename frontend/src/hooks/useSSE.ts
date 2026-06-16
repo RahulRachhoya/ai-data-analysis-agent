@@ -11,6 +11,10 @@ interface SSEHandlers {
   onMessage?: (content: string) => void
   onError?: (message: string) => void
   onDone?: () => void
+  onPlan?: (plan: string, message?: string) => void
+  onSuggestions?: (suggestions: string[], message?: string) => void
+  onAgentStatus?: (statuses: Record<string, string>, current?: string) => void
+  onHeartbeat?: (data: Record<string, unknown>) => void
 }
 
 export function useSSE() {
@@ -88,6 +92,18 @@ export function useSSE() {
                     break
                   case 'done':
                     handlers.onDone?.()
+                    break
+                  case 'plan':
+                    handlers.onPlan?.(data.plan as string, data.message as string | undefined)
+                    break
+                  case 'suggestions':
+                    handlers.onSuggestions?.((data.suggestions as string[]) || [], data.message as string | undefined)
+                    break
+                  case 'agent_status':
+                    handlers.onAgentStatus?.((data.statuses as Record<string, string>) || {}, data.current as string | undefined)
+                    break
+                  case 'heartbeat':
+                    handlers.onHeartbeat?.(data as Record<string, unknown>)
                     break
                 }
               } catch {
