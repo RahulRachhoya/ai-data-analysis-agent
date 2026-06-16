@@ -4,7 +4,9 @@ FROM node:20-alpine AS base
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci
+# Use npm install as a fallback if package-lock.json is out of sync with package.json
+# (npm ci is strict and fails on any mismatch; npm install will resolve from package.json)
+RUN npm ci || npm install
 
 # Build
 FROM base AS builder
@@ -16,7 +18,7 @@ COPY . .
 RUN mkdir -p public
 
 # Accept build-time arguments for Next.js public env vars
-ARG NEXT_PUBLIC_API_URL=https://data-analysis-backend-mni0.onrender.com
+ARG NEXT_PUBLIC_API_URL=https://data-analysis-backend.onrender.com
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 
